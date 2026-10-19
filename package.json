@@ -1,0 +1,12 @@
+{
+	"name": "ubo-builtin-scriptlets",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"fetch-ubo": "rm -rf .ubo && git clone --depth 1 https://github.com/gorhill/uBlock.git .ubo",
+		"extract": "node scripts/extract.mjs --ubo .ubo --out dist"
+	}
+}

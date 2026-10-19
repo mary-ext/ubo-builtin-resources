@@ -1,0 +1,5 @@
+.ubo/
+dist/
+prev/
+notes.md
+node_modules/
