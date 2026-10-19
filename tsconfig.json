@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": ["esnext"],
+		"types": ["node"],
+		"moduleDetection": "force",
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"resolveJsonModule": true,
+		"allowImportingTsExtensions": true,
+		"strict": true,
+		"noUnusedLocals": true,
+		"noEmit": true,
+		"erasableSyntaxOnly": true,
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true
+	},
+	"include": ["scripts"]
+}

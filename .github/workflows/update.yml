@@ -1,0 +1,92 @@
+name: update
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/**
+      - .github/workflows/update.yml
+      - mise.toml
+      - package.json
+      - pnpm-lock.yaml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: jdx/mise-action@v5
+
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: lint
+        run: pnpm run lint
+
+      - name: resolve latest uBO release
+        run: |
+          UBO_TAG=$(gh release view --repo gorhill/uBlock --json tagName -q .tagName)
+          echo "UBO_TAG=$UBO_TAG" >> "$GITHUB_ENV"
+          echo "extracting from $UBO_TAG"
+
+      - name: clone gorhill/uBlock
+        run: git clone --depth 1 --branch "$UBO_TAG" https://github.com/gorhill/uBlock.git .ubo
+
+      - name: extract
+        run: pnpm run extract
+
+      - name: archive
+        run: |
+          pnpm run archive
+          (cd out && sha256sum builtins.asar > builtins.asar.sha256)
+
+      - name: fetch previous release
+        run: |
+          mkdir -p prev
+          gh release download --pattern builtins.asar --dir prev \
+            || echo "no previous release"
+
+      - name: compare
+        id: compare
+        run: |
+          commit=$(jq -r .commit dist/manifest.v1.json)
+          {
+            echo "extracted from gorhill/uBlock [$UBO_TAG](https://github.com/gorhill/uBlock/releases/tag/$UBO_TAG) (\`${commit:0:7}\`)"
+            echo
+          } > notes.md
+
+          status=0
+          node scripts/diff.ts prev/builtins.asar out/builtins.asar >> notes.md || status=$?
+          case $status in
+            0) echo "changed=false" >> "$GITHUB_OUTPUT" ;;
+            1) echo "changed=true" >> "$GITHUB_OUTPUT" ;;
+            *) exit "$status" ;;
+          esac
+          cat notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: publish release
+        if: >-
+          steps.compare.outputs.changed == 'true' &&
+          (github.event_name == 'schedule' || github.ref_name == github.event.repository.default_branch)
+        run: |
+          tag="$UBO_TAG"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            tag="$tag-${GITHUB_SHA:0:7}"
+          fi
+          gh release create "$tag" out/builtins.asar out/builtins.asar.sha256 \
+            --target "$GITHUB_SHA" \
+            --title "$tag" \
+            --notes-file notes.md \
+            --latest

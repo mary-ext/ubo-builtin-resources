@@ -1,0 +1,23 @@
+{
+	"name": "ubo-builtin-resources",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"fetch-ubo": "rm -rf .ubo && git clone --depth 1 --branch \"$(gh release view --repo gorhill/uBlock --json tagName -q .tagName)\" https://github.com/gorhill/uBlock.git .ubo",
+		"extract": "node scripts/extract.ts --ubo .ubo --out dist",
+		"archive": "mkdir -p out && asar pack dist out/builtins.asar",
+		"diff": "node scripts/diff.ts",
+		"fmt": "oxfmt",
+		"lint": "oxlint"
+	},
+	"devDependencies": {
+		"@electron/asar": "^4.3.1",
+		"@mary-ext/oxlint-rules": "^0.1.1",
+		"@types/node": "^26.6.5",
+		"oxfmt": "^0.73.0",
+		"oxlint": "^1.88.0",
+		"oxlint-tsgolint": "^7.0.2004",
+		"typescript": "^7.0.2",
+		"valibot": "^1.5.0"
+	}
+}

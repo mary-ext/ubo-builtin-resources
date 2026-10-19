@@ -1,0 +1,9 @@
+.ubo/
+dist/
+out/
+prev/
+notes.md
+node_modules/
+*.log
+.DS_Store
+.research
